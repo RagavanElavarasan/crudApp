@@ -1,6 +1,7 @@
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:crud_app/Ragavan/patient.dart';
+import 'package:crud_app/Ragavan/Pages/patient.dart';
 import 'package:crud_app/Ragavan/service/database.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
