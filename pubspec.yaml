@@ -40,6 +40,7 @@ dependencies:
   random_string: ^2.3.1
   fluttertoast: ^8.2.8
   image_picker: ^1.1.2
+  firebase_storage: ^12.3.4
 
 dev_dependencies:
   flutter_test:
