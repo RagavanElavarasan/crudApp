@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:random_string/random_string.dart';
 
 class Product extends StatefulWidget {
@@ -9,7 +10,7 @@ class Product extends StatefulWidget {
   final String? name;
   final String? quantity;
   final String? price;
-  final String? imagePath;
+  final String? imageURL;
 
   const Product({
     Key? key,
@@ -17,7 +18,7 @@ class Product extends StatefulWidget {
     this.name,
     this.quantity,
     this.price,
-    this.imagePath,
+    this.imageURL,
   }) : super(key: key);
 
   @override
@@ -29,7 +30,8 @@ class _ProductState extends State<Product> {
   final TextEditingController nameController = TextEditingController();
   String? selectedQuantity;
   final TextEditingController priceController = TextEditingController();
-  String? imagePath;
+  String? imageURL;
+  File? imageFile;
   final ImagePicker picker = ImagePicker();
 
   final List<String> quantityOptions = ['1', '2', '3', '4', '5'];
@@ -41,7 +43,7 @@ class _ProductState extends State<Product> {
       nameController.text = widget.name ?? '';
       selectedQuantity = widget.quantity;
       priceController.text = widget.price ?? '';
-      imagePath = widget.imagePath;
+      imageURL = widget.imageURL;
     }
   }
 
@@ -49,13 +51,23 @@ class _ProductState extends State<Product> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
-        imagePath = pickedFile.path;
+        imageFile = File(pickedFile.path);
       });
     }
   }
 
-  Future<void> addOrUpdateProduct() async {
+  Future<void> uploadImageAndSaveData() async {
     if (_formKey.currentState!.validate()) {
+      String? url;
+      if (imageFile != null) {
+        // Upload to Firebase Storage
+        final storageRef = FirebaseStorage.instance.ref().child(
+            'product_images/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await storageRef.putFile(imageFile!);
+        url = await storageRef.getDownloadURL();
+      }
+
+      // Save to Firestore
       if (widget.id != null) {
         // Update existing product
         await FirebaseFirestore.instance
@@ -65,17 +77,14 @@ class _ProductState extends State<Product> {
           'Name': nameController.text,
           'Quantity': selectedQuantity,
           'Price': priceController.text,
-          'ImagePath': imagePath,
+          'ImageURL': url ?? imageURL, // Use the new URL if available
         });
       } else {
-        // Generate an ID with exactly 10 characters
-        String newId = randomAlphaNumeric(10);
         await FirebaseFirestore.instance.collection('product').add({
-          'id': newId,
           'Name': nameController.text,
           'Quantity': selectedQuantity,
           'Price': priceController.text,
-          'ImagePath': imagePath,
+          'ImageURL': url,
         });
       }
 
@@ -102,9 +111,11 @@ class _ProductState extends State<Product> {
                 onTap: pickImage,
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage:
-                      imagePath != null ? FileImage(File(imagePath!)) : null,
-                  child: imagePath == null
+                  backgroundImage: imageFile != null
+                      ? FileImage(imageFile!)
+                      : (imageURL != null ? NetworkImage(imageURL!) : null)
+                          as ImageProvider,
+                  child: imageFile == null && imageURL == null
                       ? Icon(Icons.camera_alt, size: 50)
                       : null,
                 ),
@@ -114,7 +125,6 @@ class _ProductState extends State<Product> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Product Name Field
                     TextFormField(
                       controller: nameController,
                       decoration: InputDecoration(
@@ -129,7 +139,6 @@ class _ProductState extends State<Product> {
                       },
                     ),
                     SizedBox(height: 15),
-                    // Product Quantity Field
                     DropdownButtonFormField<String>(
                       value: selectedQuantity,
                       decoration: InputDecoration(
@@ -151,7 +160,6 @@ class _ProductState extends State<Product> {
                           value == null ? 'Select quantity' : null,
                     ),
                     SizedBox(height: 15),
-                    // Product Price Field
                     TextFormField(
                       controller: priceController,
                       decoration: InputDecoration(
@@ -163,11 +171,10 @@ class _ProductState extends State<Product> {
                           value!.isEmpty ? 'Enter price' : null,
                     ),
                     SizedBox(height: 20),
-                    // Add/Update Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.lightBlue),
-                      onPressed: addOrUpdateProduct,
+                      onPressed: uploadImageAndSaveData,
                       child: Text(
                         widget.id != null ? 'Update' : 'Add Product',
                         style: TextStyle(

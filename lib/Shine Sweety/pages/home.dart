@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'product.dart';
-import 'dart:io'; // Import for File
 
 class HomePage extends StatelessWidget {
   @override
@@ -24,11 +23,9 @@ class HomePage extends StatelessWidget {
 
           return ListView(
             children: snapshot.data!.docs.map((doc) {
-              final data = doc.data()
-                  as Map<String, dynamic>; // Cast document data to a map
+              final data = doc.data() as Map<String, dynamic>;
 
-              // Retrieve data safely
-              String? imagePath = data['ImagePath'];
+              String? imageURL = data['ImageURL'];
               String name = data['Name'] ?? '';
               String quantity = data['Quantity'] ?? '';
               String price = data['Price'] ?? '';
@@ -37,12 +34,9 @@ class HomePage extends StatelessWidget {
                 margin: EdgeInsets.all(10),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: (imagePath != null && imagePath.isNotEmpty)
-                        ? FileImage(File(imagePath))
-                        : null,
-                    child: (imagePath == null || imagePath.isEmpty)
-                        ? Icon(Icons.camera_alt)
-                        : null,
+                    backgroundImage:
+                        imageURL != null ? NetworkImage(imageURL) : null,
+                    child: imageURL == null ? Icon(Icons.camera_alt) : null,
                   ),
                   title: Text('Name : $name'),
                   subtitle: Column(
@@ -51,8 +45,7 @@ class HomePage extends StatelessWidget {
                       Text('Quantity : $quantity'),
                       Text('Price : $price')
                     ],
-                  ) //('Quantity: $quantity ')//Price: $price'),
-                  ,
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -71,7 +64,7 @@ class HomePage extends StatelessWidget {
                                   name: name,
                                   quantity: quantity,
                                   price: price,
-                                  imagePath: imagePath,
+                                  imageURL: imageURL,
                                 ),
                               );
                             },
