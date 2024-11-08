@@ -67,7 +67,7 @@ class _ProductState extends State<Product> {
         url = await storageRef.getDownloadURL();
       }
 
-      // Save to Firestore
+      // Save to Firestores
       if (widget.id != null) {
         // Update existing product
         await FirebaseFirestore.instance

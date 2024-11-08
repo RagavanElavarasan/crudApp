@@ -13,7 +13,7 @@ class DatabaseService {
     });
   }
 
-  // Update an existing product
+  // Update an existing products
   Future<void> updateProduct(
       String id, String name, String quantity, String price) {
     return _db.collection('product').doc(id).update({
